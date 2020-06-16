@@ -12,9 +12,24 @@ namespace IkSocks5.Core.Packets
     /// </summary>
     public class MethodRequest : BinaryReader
     {
+        /// <summary>
+        /// Socks version.
+        /// </summary>
         public ushort Version { get; private set; }
+
+        /// <summary>
+        /// Number of auth methods.
+        /// </summary>
         public ushort Methods { get; private set; }
+
+        /// <summary>
+        /// Auth Method selection.
+        /// </summary>
         public Method Method { get; private set; }
+
+        /// <summary>
+        /// Packet formed properly.
+        /// </summary>
         public bool Valid { get; private set; } = true;
 
         public MethodRequest(byte[] data) : base(new MemoryStream(data))

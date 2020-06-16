@@ -24,54 +24,45 @@ namespace IkSocks5.Core.Packets
         public UInt16 Port { get; private set; }
         public byte[] PortBytes { get; private set; }
         public bool Valid { get; private set; } = true;
-        public bool PassThrough { get; private set; } = false;
         public byte[] Data { get; private set; }
 
         public DataRequest(byte[] data) : base(new MemoryStream(data))
         {
             try
             {
-                if (data[0] == 0x05)
+                Version = ReadByte();
+                Command = (Command)Enum.ToObject(typeof(Command), ReadByte());
+                Reserved = ReadByte();
+                AddressType = (AddressType)Enum.ToObject(typeof(AddressType), ReadByte());
+
+                var data2 = Encoding.ASCII.GetString(data);
+                switch (AddressType)
                 {
-                    Version = ReadByte();
-                    Command = (Command)Enum.ToObject(typeof(Command), ReadByte());
-                    Reserved = ReadByte();
-                    AddressType = (AddressType)Enum.ToObject(typeof(AddressType), ReadByte());
+                    case AddressType.IPv4:
+                        DestinationAddress = new IPAddress(ReadBytes(4));
+                        DestinationBytes = DestinationAddress.GetAddressBytes();
+                        break;
+                    case AddressType.IPv6:
+                        DestinationAddress = new IPAddress(ReadBytes(16));
+                        DestinationBytes = DestinationAddress.GetAddressBytes();
+                        break;
+                    case AddressType.DomainName:
+                        var octets = ReadByte();
+                        var domainBytes = ReadBytes(octets);
+                        var domainName = Encoding.ASCII.GetString(domainBytes);
 
-                    var data2 = Encoding.ASCII.GetString(data);
-                    switch (AddressType)
-                    {
-                        case AddressType.IPv4:                  
-                            DestinationAddress = new IPAddress(ReadBytes(4));
-                            DestinationBytes = DestinationAddress.GetAddressBytes();
-                            break;
-                        case AddressType.IPv6:
-                            DestinationAddress = new IPAddress(ReadBytes(16));
-                            DestinationBytes = DestinationAddress.GetAddressBytes();
-                            break;
-                        case AddressType.DomainName:
-                            var octets = ReadByte();
-                            var domainBytes = ReadBytes(octets);
-                            var domainName = Encoding.ASCII.GetString(domainBytes);
+                        byte[] count = new byte[1] { octets };
 
-                            byte[] count = new byte[1] { octets };
-
-                            DestinationBytes = count.Concat(domainBytes).ToArray();
-                            DestinationAddress = Dns.GetHostAddresses(domainName)[0];
-                            break;
-                        default:
-                            Valid = false;
-                            break;
-                    }
-
-                    PortBytes = ReadBytes(2);
-                    Port = BitConverter.ToUInt16(PortBytes.Reverse().ToArray(), 0);
+                        DestinationBytes = count.Concat(domainBytes).ToArray();
+                        DestinationAddress = Dns.GetHostAddresses(domainName)[0];
+                        break;
+                    default:
+                        Valid = false;
+                        break;
                 }
-                else
-                {
-                    PassThrough = true;
-                    Data = data;
-                }
+
+                PortBytes = ReadBytes(2);
+                Port = BitConverter.ToUInt16(PortBytes.Reverse().ToArray(), 0);
             }
             catch
             {

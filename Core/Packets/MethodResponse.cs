@@ -26,7 +26,7 @@ namespace IkSocks5.Core.Packets
         }
 
         /// <summary>
-        /// Use BinaryWriter FLush() to flush our Data array.
+        /// Use BinaryWriter Flush() to dereference our Data array.
         /// </summary>
         public override void Flush()
         {

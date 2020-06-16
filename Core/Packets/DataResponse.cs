@@ -16,13 +16,14 @@ namespace IkSocks5.Core.Packets
         {
             using (MemoryStream ms = new MemoryStream())
             {
-                Write((byte)5);
-                Write((byte)result);
-                Write((byte)0x00);
-                Write((byte)addressType);
-                Write(adressBytes);
-                Write(portBytes);
+                Write((byte)5); //Version
+                Write((byte)result); //RequestResult
+                Write((byte)0x00); //Reserved byte, always 0x00
+                Write((byte)addressType); //AddressType
+                Write(adressBytes); //AddressBytes 4 octets or 15.
+                Write(portBytes); //Port bytes in network format (reversed)
 
+                //Copy the base stream out into our Data array.
                 BaseStream.Position = 0;
                 BaseStream.CopyTo(ms);
                 Data = ms.ToArray();

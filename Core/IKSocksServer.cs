@@ -14,11 +14,10 @@ namespace IkSocks5.Core
         {
             try
             {
-                Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
                 Server = new TcpListener(new IPEndPoint(IPAddress.Any, 1080));
                 Server.Start();
 
-                Console.WriteLine("IkSocks5 is running and waiting for connections...");
+                Console.WriteLine($"IkSocks5 is running and waiting for connections on {Server.LocalEndpoint}");
 
                 Server.BeginAcceptTcpClient(AcceptCallback, Server);
             }
@@ -35,11 +34,12 @@ namespace IkSocks5.Core
                 if (ar.AsyncState is TcpListener serverSocket)
                 {
                     TcpClient clientTcpClient = serverSocket.EndAcceptTcpClient(ar);
-                    var client = new Client(clientTcpClient);
+                    var client = new ClientTunnel(clientTcpClient);
+                    
                     Task.Run(() =>
                     {
-                        Console.WriteLine($"New incoming connection from {clientTcpClient.Client.RemoteEndPoint} running on threadID {Thread.CurrentThread.ManagedThreadId}");
-                        client.Listen();  //Blocking
+                        Console.WriteLine($"New Client {clientTcpClient?.Client?.RemoteEndPoint} handling on thread {Thread.CurrentThread.ManagedThreadId}");
+                        client?.Listen();  //Blocking
                         client?.Dispose();
                     });                   
                 }

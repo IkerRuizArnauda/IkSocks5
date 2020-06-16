@@ -43,9 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Client.cs" />
+    <Compile Include="Core\ClientTunnel.cs" />
     <Compile Include="Core\Enums.cs" />
-    <Compile Include="Core\Header.cs" />
     <Compile Include="Core\Packets\DataRequest.cs" />
     <Compile Include="Core\Packets\DataResponse.cs" />
     <Compile Include="Core\Packets\MethodRequest.cs" />
