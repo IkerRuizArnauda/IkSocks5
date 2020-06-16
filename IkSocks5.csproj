@@ -44,7 +44,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Client.cs" />
-    <Compile Include="Core\ClientHandler.cs" />
     <Compile Include="Core\Enums.cs" />
     <Compile Include="Core\Header.cs" />
     <Compile Include="Core\Packets\DataRequest.cs" />
