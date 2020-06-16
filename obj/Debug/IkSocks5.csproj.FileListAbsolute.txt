@@ -1,0 +1,7 @@
+C:\Users\Admin\Desktop\IkSocks5\IkSocks5\bin\Debug\IkSocks5.exe.config
+C:\Users\Admin\Desktop\IkSocks5\IkSocks5\bin\Debug\IkSocks5.exe
+C:\Users\Admin\Desktop\IkSocks5\IkSocks5\bin\Debug\IkSocks5.pdb
+C:\Users\Admin\Desktop\IkSocks5\IkSocks5\obj\Debug\IkSocks5.csprojAssemblyReference.cache
+C:\Users\Admin\Desktop\IkSocks5\IkSocks5\obj\Debug\IkSocks5.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Desktop\IkSocks5\IkSocks5\obj\Debug\IkSocks5.exe
+C:\Users\Admin\Desktop\IkSocks5\IkSocks5\obj\Debug\IkSocks5.pdb
