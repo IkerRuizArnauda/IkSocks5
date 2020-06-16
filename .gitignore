@@ -1,0 +1,9 @@
+
+.vs/IkSocks5/v16/.suo
+*.exe
+*.pdb
+obj/Debug/.NETFramework,Version=v4.7.2.AssemblyAttributes.cs
+obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+obj/Debug/IkSocks5.csproj.CoreCompileInputs.cache
+obj/Debug/IkSocks5.csproj.FileListAbsolute.txt
+obj/Debug/IkSocks5.csprojAssemblyReference.cache
