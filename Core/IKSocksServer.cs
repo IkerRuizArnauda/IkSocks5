@@ -38,7 +38,7 @@ namespace IkSocks5.Core
                     
                     Task.Run(() =>
                     {
-                        Console.WriteLine($"New Client {clientTcpClient?.Client?.RemoteEndPoint} handling on thread {Thread.CurrentThread.ManagedThreadId}");
+                        Console.WriteLine($"New Client {clientTcpClient?.Client?.RemoteEndPoint} handling on thread {Thread.CurrentThread.ManagedThreadId}"); 
                         client?.Listen();  //Blocking
                         client?.Dispose();
                     });                   
