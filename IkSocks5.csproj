@@ -50,6 +50,7 @@
     <Compile Include="Core\Packets\MethodRequest.cs" />
     <Compile Include="Core\Packets\MethodResponse.cs" />
     <Compile Include="Core\IKSocksServer.cs" />
+    <Compile Include="Core\NonBlockingConsole.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
