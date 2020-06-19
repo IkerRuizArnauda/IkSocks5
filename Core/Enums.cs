@@ -16,7 +16,6 @@
         AuthResponse   = 0x04,
         DataRequest    = 0x05,
         DataResponse   = 0x06,
-        Tunnel         = 0x07,
     }
 
     public enum AddressType : byte

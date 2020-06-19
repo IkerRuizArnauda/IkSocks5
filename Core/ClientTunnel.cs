@@ -54,19 +54,12 @@ namespace IkSocks5.Core
         /// </summary>
         public void Listen()
         {
+            //Authentication and Endpoint request process.
             while (true)
             {
                 try
                 {
                     NetworkStream clientStream = ClientTCPClient.GetStream();
-                    NetworkStream remoteStream = null;
-
-                    //If this client already went through the CONNECT cmd, initialize its networkstream.
-                    if (RemoteTCPClient != null && RemoteTCPClient.Connected)
-                    {
-                        remoteStream = RemoteTCPClient.GetStream();
-                        SendPendingBetweenRemoteAndClient(clientStream, remoteStream);
-                    }
 
                     if (ClientTCPClient.Available > 0)
                     {
@@ -152,15 +145,14 @@ namespace IkSocks5.Core
                                     break;
                                 }
                             //The client already went through handshake and datarequest, at this point we are just passing data between client <-> remote 
-                            case MessageType.Tunnel:
-                                //We write the client data onto our remote stream.
-                                SendPendingBetweenRemoteAndClient(clientStream, remoteStream);
-                                remoteStream.Write(buffer, 0, buffer.Length);
-                                break;
+                            case MessageType.Null:
+                                throw new Exception("Invalid routing.");
                         }
                     }
 
-                    SendPendingBetweenRemoteAndClient(clientStream, remoteStream);
+                    //At this point, if we have stablished a remote connection we go on and break in order to enter tunnel mode.
+                    if (RemoteTCPClient != null && RemoteTCPClient.Connected)
+                        break;
 
                     //If this client has reported no activity in 10 seconds, kill it. We have no better way of knowing with TcpClients.
                     if (Inactivity.Elapsed.TotalSeconds > 18)
@@ -175,20 +167,45 @@ namespace IkSocks5.Core
                     break;
                 }
             }
-        }
 
-        private void SendPendingBetweenRemoteAndClient(NetworkStream clientStream, NetworkStream remoteStream)
-        {
-            //If the remote stream has sent us anything back.
-            if (RemoteTCPClient != null && RemoteTCPClient.Connected && RemoteTCPClient.Available > 0)
+            //Tunnel mode.
+            while(Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
             {
-                Inactivity.Restart();
-                byte[] remoteBuff = new byte[RemoteTCPClient.Available];
+                if (Inactivity.Elapsed.TotalSeconds > 18)
+                    break;
 
-                //Read what the remote endpoint sent us.
-                remoteStream.Read(remoteBuff, 0, remoteBuff.Length);
-                //Route it back to our client stream.
-                clientStream.Write(remoteBuff, 0, remoteBuff.Length);
+                try
+                {
+                    NetworkStream clientStream = ClientTCPClient.GetStream();
+                    NetworkStream remoteStream = RemoteTCPClient.GetStream();
+
+                    if (ClientTCPClient.Available > 0)
+                    {
+                        Inactivity.Restart();
+
+                        byte[] buffer = new byte[ClientTCPClient.Available];
+                        
+                        var read = clientStream.Read(buffer, 0, buffer.Length);
+                        remoteStream.Write(buffer, 0, buffer.Length);
+                    }
+
+                    if (RemoteTCPClient != null && RemoteTCPClient.Connected && RemoteTCPClient.Available > 0)
+                    {
+                        Inactivity.Restart();
+                        byte[] remoteBuff = new byte[RemoteTCPClient.Available];
+
+                        remoteStream.Read(remoteBuff, 0, remoteBuff.Length);
+                        clientStream.Write(remoteBuff, 0, remoteBuff.Length);
+                    }
+
+                    Thread.Sleep(1);
+                }
+                catch (Exception ex)
+                {
+                    //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
+                    NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
+                    break;
+                }
             }
         }
 
@@ -203,7 +220,7 @@ namespace IkSocks5.Core
             else if (data[0] == 0x05)
                 return MessageType.DataRequest;
             else
-                return MessageType.Tunnel;
+                return MessageType.Null;
         }
 
         /// <summary>
