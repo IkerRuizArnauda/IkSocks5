@@ -34,9 +34,9 @@ namespace IkSocks5.Core
         public bool Authenticated = false;
 
         /// <summary>
-        /// Client already told us his request, IPv4, IPv6 or Domain request.
+        /// Client local ep.
         /// </summary>
-        public bool BridgeMode = false;
+        public string ClientLocalEndPont { get; set; }
 
         /// <summary>
         /// Initialize a ClientTunnel
@@ -44,9 +44,14 @@ namespace IkSocks5.Core
         /// <param name="client">Provided by our TcpListener EndAccept.</param>
         public ClientTunnel(TcpClient client)
         {
+            if (client == null)
+                throw new Exception("Null TcpClient.");
+         
             ClientTCPClient = client;
-            ClientTCPClient.ReceiveBufferSize = 1000000;
-            ClientTCPClient.SendBufferSize = 1000000;
+            ClientTCPClient.ReceiveBufferSize = 500000;
+            ClientTCPClient.SendBufferSize = 500000;
+
+            ClientLocalEndPont = client.Client.RemoteEndPoint.ToString();
         }
 
         /// <summary>
@@ -54,19 +59,19 @@ namespace IkSocks5.Core
         /// </summary>
         public void Listen()
         {
+            NetworkStream clientStream = ClientTCPClient.GetStream();
+            NetworkStream remoteStream = null;
+
             //Authentication and Endpoint request process.
             while (true)
             {
                 try
                 {
-                    NetworkStream clientStream = ClientTCPClient.GetStream();
-
-                    if (ClientTCPClient.Available > 0)
+                    //How much bytes is our client sending.
+                    byte[] buffer = new byte[ClientTCPClient.Available];
+                    if (buffer.Length > 0)
                     {
                         Inactivity.Restart();
-
-                        //How much bytes is our client sending.
-                        byte[] buffer = new byte[ClientTCPClient.Available];
                         //Read those bytes.
                         var read = clientStream.Read(buffer, 0, buffer.Length);
                         //Parse the header.
@@ -106,8 +111,8 @@ namespace IkSocks5.Core
                                         if (RemoteTCPClient == null)
                                         {
                                             RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
-                                            RemoteTCPClient.ReceiveBufferSize = 1000000;
-                                            RemoteTCPClient.SendBufferSize = 1000000;
+                                            RemoteTCPClient.ReceiveBufferSize = 500000;
+                                            RemoteTCPClient.SendBufferSize = 500000;
                                         }
 
                                         //Handle the command, so far we only support 0x01 CONNECT.
@@ -129,7 +134,6 @@ namespace IkSocks5.Core
                                                     NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} host REJECTED the connection.");
                                                 }
 
-
                                                 //Write the result to our client stream.
                                                 using (DataResponse dResponse = new DataResponse(result, dReq.AddressType, dReq.DestinationBytes, dReq.PortBytes))
                                                     clientStream.Write(dResponse.Data, 0, dResponse.Data.Length);
@@ -143,12 +147,12 @@ namespace IkSocks5.Core
                                         }
                                     }
                                     break;
-                                }
-                            //The client already went through handshake and datarequest, at this point we are just passing data between client <-> remote 
+                                } 
                             case MessageType.Null:
                                 throw new Exception("Invalid routing.");
                         }
                     }
+                    buffer = null;
 
                     //At this point, if we have stablished a remote connection we go on and break in order to enter tunnel mode.
                     if (RemoteTCPClient != null && RemoteTCPClient.Connected)
@@ -168,45 +172,50 @@ namespace IkSocks5.Core
                 }
             }
 
-            //Tunnel mode.
-            while(Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
+            if (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
             {
-                if (Inactivity.Elapsed.TotalSeconds > 18)
-                    break;
+                remoteStream = RemoteTCPClient.GetStream();
 
-                try
+                using (clientStream)
                 {
-                    NetworkStream clientStream = ClientTCPClient.GetStream();
-                    NetworkStream remoteStream = RemoteTCPClient.GetStream();
-
-                    if (ClientTCPClient.Available > 0)
+                    using (remoteStream)
                     {
-                        Inactivity.Restart();
+                        //The client already went through handshake and datarequest, at this point we are just passing data between client <-> remote 
+                        while (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
+                        {
+                            if (Inactivity.Elapsed.TotalSeconds > 18)
+                                break;
 
-                        byte[] buffer = new byte[ClientTCPClient.Available];
-                        
-                        var read = clientStream.Read(buffer, 0, buffer.Length);
-                        remoteStream.Write(buffer, 0, buffer.Length);
+                            try
+                            {
+                                byte[] buffer = new byte[ClientTCPClient.Available];
+                                if (buffer.Length > 0)
+                                {
+                                    Inactivity.Restart();
+                                    var read = clientStream.Read(buffer, 0, buffer.Length);
+                                    remoteStream.Write(buffer, 0, buffer.Length);
+                                }
+
+                                byte[] remoteBuff = new byte[RemoteTCPClient.Available];
+                                if (remoteBuff.Length > 0)
+                                {
+                                    Inactivity.Restart();
+                                    remoteStream.Read(remoteBuff, 0, remoteBuff.Length);
+                                    clientStream.Write(remoteBuff, 0, remoteBuff.Length);
+                                }
+
+                                Thread.Sleep(1);
+                            }
+                            catch (Exception ex)
+                            {
+                                //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
+                                NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
+                                break;
+                            }
+                        }
                     }
-
-                    if (RemoteTCPClient != null && RemoteTCPClient.Connected && RemoteTCPClient.Available > 0)
-                    {
-                        Inactivity.Restart();
-                        byte[] remoteBuff = new byte[RemoteTCPClient.Available];
-
-                        remoteStream.Read(remoteBuff, 0, remoteBuff.Length);
-                        clientStream.Write(remoteBuff, 0, remoteBuff.Length);
-                    }
-
-                    Thread.Sleep(1);
                 }
-                catch (Exception ex)
-                {
-                    //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
-                    NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
-                    break;
-                }
-            }
+            }         
         }
 
         /// <summary>
@@ -228,7 +237,7 @@ namespace IkSocks5.Core
         /// </summary>
         public void Dispose()
         {
-            NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Disconnected.");
+            NonBlockingConsole.WriteLine($"Client {ClientLocalEndPont} Disconnected.");
 
             ClientTCPClient = null;
             RemoteTCPClient = null;
