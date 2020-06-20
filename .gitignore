@@ -16,3 +16,4 @@ obj/Debug/IkSocks5.csproj.CopyComplete
 bin/Debug/Accounts/Acocunts.INI
 bin/Debug/INIFileParser.dll
 bin/Debug/INIFileParser.xml
+bin/Debug/Configuration.ini
