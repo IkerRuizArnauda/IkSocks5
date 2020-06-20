@@ -7,10 +7,11 @@ namespace IkSocks5
     {
         static void Main(string[] args)
         {
-            IKSocksServer socksServer = new IKSocksServer();
-            socksServer.StartServer();
-
-            Console.ReadLine();
+            using (IKSocksServer socksServer = new IKSocksServer())
+            {
+                socksServer.StartServer();
+                Console.ReadLine();
+            }
         }
     }
 }

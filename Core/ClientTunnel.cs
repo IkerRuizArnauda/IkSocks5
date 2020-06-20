@@ -34,6 +34,11 @@ namespace IkSocks5.Core
         public bool Authenticated = false;
 
         /// <summary>
+        /// Exit flag.
+        /// </summary>
+        private volatile bool IsRunning = false;
+
+        /// <summary>
         /// Client local ep.
         /// </summary>
         public string ClientLocalEndPont { get; set; }
@@ -52,6 +57,8 @@ namespace IkSocks5.Core
             ClientTCPClient.SendBufferSize = 500000;
 
             ClientLocalEndPont = client.Client.RemoteEndPoint.ToString();
+
+            IsRunning = true;
         }
 
         /// <summary>
@@ -62,7 +69,7 @@ namespace IkSocks5.Core
             NetworkStream clientStream = ClientTCPClient.GetStream();
 
             //Authentication and Endpoint request process.
-            while (true)
+            while (IsRunning)
             {
                 try
                 {
@@ -180,7 +187,7 @@ namespace IkSocks5.Core
                     using (remoteStream)
                     {
                         //The client already went through handshake and datarequest, at this point we are just passing data between client <-> remote 
-                        while (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
+                        while (IsRunning && Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
                         {
                             if (Inactivity.Elapsed.TotalSeconds > 18)
                                 break;
@@ -229,6 +236,11 @@ namespace IkSocks5.Core
                 return MessageType.DataRequest;
             else
                 return MessageType.Null;
+        }
+
+        public void Stop()
+        {
+            IsRunning = false;
         }
 
         /// <summary>
