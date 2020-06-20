@@ -60,7 +60,6 @@ namespace IkSocks5.Core
         public void Listen()
         {
             NetworkStream clientStream = ClientTCPClient.GetStream();
-            NetworkStream remoteStream = null;
 
             //Authentication and Endpoint request process.
             while (true)
@@ -174,7 +173,7 @@ namespace IkSocks5.Core
 
             if (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
             {
-                remoteStream = RemoteTCPClient.GetStream();
+                NetworkStream remoteStream = RemoteTCPClient.GetStream();
 
                 using (clientStream)
                 {
