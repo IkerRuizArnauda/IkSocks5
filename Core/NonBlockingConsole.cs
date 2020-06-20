@@ -12,6 +12,6 @@ namespace IkSocks5
         /// Static constructor
         /// </summary>
         static NonBlockingConsole() { var t = new Thread(() => { while (true) Console.WriteLine(m_Queue.Take()); }); t.IsBackground = true; t.Start(); }
-        public static void WriteLine(string value) { m_Queue.Add(value); }
+        public static void WriteLine(string value) { m_Queue.Add($"{DateTime.Now} {value}"); }
     }
 }

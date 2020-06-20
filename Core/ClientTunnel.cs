@@ -117,6 +117,14 @@ namespace IkSocks5.Core
                                         switch (dReq.Command)
                                         {
                                             case Command.Connect:
+                                                //Create the remote socket according to the request AddressFamily
+                                                if (RemoteTCPClient == null)
+                                                {
+                                                    RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
+                                                    RemoteTCPClient.ReceiveBufferSize = 500000;
+                                                    RemoteTCPClient.SendBufferSize = 500000;
+                                                }
+
                                                 NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} CONNECT request to {dReq?.DestinationAddress}:{dReq?.Port}");
                                                 //Try to connect to the remote endpoint the client is requesting.
                                                 RemoteTCPClient.Connect(dReq.DestinationAddress, dReq.Port);
@@ -124,14 +132,6 @@ namespace IkSocks5.Core
                                                 RequestResult result = RequestResult.Succeeded;
                                                 if (RemoteTCPClient.Connected)
                                                 {
-                                                    //Create the remote socket according to the request AddressFamily
-                                                    if (RemoteTCPClient == null)
-                                                    {
-                                                        RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
-                                                        RemoteTCPClient.ReceiveBufferSize = 500000;
-                                                        RemoteTCPClient.SendBufferSize = 500000;
-                                                    }
-
                                                     NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} GRANTED connection. Entering tunnel mode.");
                                                 }
                                                 else

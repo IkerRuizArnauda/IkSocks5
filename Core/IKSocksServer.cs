@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Net;
+using System.Linq;
 using System.Threading;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 
 namespace IkSocks5.Core
@@ -10,7 +10,7 @@ namespace IkSocks5.Core
     public class IKSocksServer : IDisposable
     {
         private TcpListener Socks5Server { get; set; }
-        private Queue<ClientTunnel> Clients = new Queue<ClientTunnel>();
+        private HashSet<ClientTunnel> Clients = new HashSet<ClientTunnel>();
         private bool disposedValue;
 
         public void StartServer()
@@ -35,20 +35,31 @@ namespace IkSocks5.Core
         {
             try
             {
+                if (disposedValue)
+                    return;
+
                 if (ar.AsyncState is TcpListener serverSocket)
                 {
                     TcpClient clientTcpClient = serverSocket.EndAcceptTcpClient(ar);
                     var client = new ClientTunnel(clientTcpClient);
-                    
-                    Task.Run(() =>
+
+                    ThreadPool.QueueUserWorkItem((WaitCallback) => 
                     {
-                        Clients.Enqueue(client);
-                        NonBlockingConsole.WriteLine($"Client {clientTcpClient?.Client?.RemoteEndPoint} trying to connect, handling on thread {Thread.CurrentThread.ManagedThreadId}"); 
-                        client?.Listen();  //Blocking
-                        Clients.Dequeue();
-                        client?.Dispose();
-                    });                   
+                        using (clientTcpClient)
+                        {
+                            using (client)
+                            {
+                                Clients.Add(client);
+                                NonBlockingConsole.WriteLine($"Client {clientTcpClient?.Client?.RemoteEndPoint} trying to connect, handling on thread {Thread.CurrentThread.ManagedThreadId}");
+                                client?.Listen();  //Blocking
+                                Clients.Remove(client);
+                            }
+                        }
+                    });                
                 }
+
+                if (disposedValue)
+                    return;
 
                 //Keep listening incoming connections.
                 Socks5Server.BeginAcceptTcpClient(AcceptCallback, Socks5Server);
@@ -68,9 +79,15 @@ namespace IkSocks5.Core
                     try { Socks5Server?.Stop(); } catch { } //Terminating, we dont care.
                     try { Socks5Server?.Server?.Dispose(); } catch { } //Terminating, we dont care.
 
+                    var clients = Clients.ToArray();
                     //Stop any active clients.
-                    while (Clients.Count > 0)
-                        Clients.Dequeue().Stop();                   
+                    foreach(ClientTunnel cTun in clients)
+                    {
+                        NonBlockingConsole.WriteLine($"Stopping client {cTun.ClientLocalEndPont}");
+                        cTun?.Stop();
+                        cTun?.Dispose();
+                        Clients.Remove(cTun);
+                    }
                 }
 
                 disposedValue = true;
