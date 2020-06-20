@@ -5,6 +5,8 @@ using System.Threading;
 using System.Net.Sockets;
 using System.Collections.Generic;
 
+using IkSocks5.Configuration;
+
 namespace IkSocks5.Core
 {
     public class IKSocksServer : IDisposable
@@ -17,11 +19,13 @@ namespace IkSocks5.Core
         {
             try
             {
-                Socks5Server = new TcpListener(new IPEndPoint(IPAddress.IPv6Any, 1080));
+                NonBlockingConsole.WriteLine($"IkSocks5 is starting...");
+                Socks5Server = new TcpListener(new IPEndPoint(ConfigurationManager.ListeningAddress, ConfigurationManager.ListneingPort));
                 Socks5Server.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
                 Socks5Server.Start();
 
-                NonBlockingConsole.WriteLine($"IkSocks5 is running and waiting for connections on {Socks5Server.LocalEndpoint}");
+                NonBlockingConsole.WriteLine($"IkSocks5 is now listening for connections on {Socks5Server.LocalEndpoint}");
+                NonBlockingConsole.WriteLine($"Authentication type: {ConfigurationManager.AuthenticationMethod}");
 
                 Socks5Server.BeginAcceptTcpClient(AcceptCallback, Socks5Server);
             }
@@ -43,7 +47,7 @@ namespace IkSocks5.Core
                     TcpClient clientTcpClient = serverSocket.EndAcceptTcpClient(ar);
                     var client = new ClientTunnel(clientTcpClient);
 
-                    ThreadPool.QueueUserWorkItem((WaitCallback) => 
+                    ThreadPool.QueueUserWorkItem((WaitCallback) =>
                     {
                         using (clientTcpClient)
                         {
@@ -55,7 +59,7 @@ namespace IkSocks5.Core
                                 Clients.Remove(client);
                             }
                         }
-                    });                
+                    });
                 }
 
                 if (disposedValue)
@@ -81,7 +85,7 @@ namespace IkSocks5.Core
 
                     var clients = Clients.ToArray();
                     //Stop any active clients.
-                    foreach(ClientTunnel cTun in clients)
+                    foreach (ClientTunnel cTun in clients)
                     {
                         NonBlockingConsole.WriteLine($"Stopping client {cTun.ClientLocalEndPont}");
                         cTun?.Stop();

@@ -7,9 +7,9 @@ namespace IkSocks5
     {
         static void Main(string[] args)
         {
-            using (IKSocksServer socksServer = new IKSocksServer())
+            using (IKSocksServer socks5Server = new IKSocksServer())
             {
-                socksServer.StartServer();
+                socks5Server.StartServer();
                 Console.ReadLine();
             }
         }

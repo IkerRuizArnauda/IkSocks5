@@ -2,32 +2,32 @@
 {
     public enum Method : byte
     {
-        NoAuth        = 0x00,
-        GSSAPI        = 0x01,
-        UserPw        = 0x02,
-        Null          = 0x03,
+        NoAuthentication                    = 0x00,
+        GSSAPI                              = 0x01,
+        UserPassword                        = 0x02,
+        Null                                = 0x03,
     }
 
     public enum MessageType : byte
     {
-        Null           = 0x00,
-        MethodRequest  = 0x01,
-        AuthRequest    = 0x02,
-        DataRequest    = 0x03,
+        Null                                = 0x00,
+        MethodRequest                       = 0x01,
+        AuthRequest                         = 0x02,
+        DataRequest                         = 0x03,
     }
 
     public enum AddressType : byte
     {
-        IPv4           = 0x01,
-        DomainName     = 0x03,
-        IPv6           = 0x04
+        IPv4                                = 0x01,
+        DomainName                          = 0x03,
+        IPv6                                = 0x04
     }
 
     public enum Command : byte
     {
-        Connect        = 0x01,
-        Bind           = 0x02,
-        Udp            = 0x03,
+        Connect                             = 0x01,
+        Bind                                = 0x02,
+        Udp                                 = 0x03,
     }
 
     public enum Result : byte

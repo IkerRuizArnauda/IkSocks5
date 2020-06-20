@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using IkSocks5.Configuration;
+using System.IO;
 
 namespace IkSocks5.Core.Packets
 {
@@ -15,7 +16,7 @@ namespace IkSocks5.Core.Packets
             using (MemoryStream ms = new MemoryStream())
             {
                 Write((byte)request.Version);
-                Write((byte)request.Method);
+                Write((byte)ConfigurationManager.AuthenticationMethod);
 
                 BaseStream.Position = 0;
                 BaseStream.CopyTo(ms);

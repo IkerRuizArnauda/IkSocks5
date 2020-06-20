@@ -52,7 +52,7 @@ namespace IkSocks5.Core
         {
             if (client == null)
                 throw new Exception("Null TcpClient.");
-         
+
             ClientTCPClient = client;
             ClientTCPClient.ReceiveBufferSize = 512000; //512Kb
             ClientTCPClient.SendBufferSize = 512000; //512Kb
@@ -97,7 +97,7 @@ namespace IkSocks5.Core
                                             {
                                                 AuthMethod = mReq.Method;
 
-                                                if (AuthMethod == Method.NoAuth)
+                                                if (AuthMethod == Method.NoAuthentication)
                                                 {
                                                     NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} AUTHENTICATION complete.");
                                                     Authenticated = true; //Flag as authenticated.
@@ -271,7 +271,7 @@ namespace IkSocks5.Core
         {
             if (!client.Authenticated && client.AuthMethod == Method.Null)
                 return MessageType.MethodRequest;
-            else if (!client.Authenticated && client.AuthMethod == Method.UserPw)
+            else if (!client.Authenticated && client.AuthMethod == Method.UserPassword)
                 return MessageType.AuthRequest;
             else if (data[0] == 0x05)
                 return MessageType.DataRequest;

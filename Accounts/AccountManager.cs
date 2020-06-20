@@ -17,7 +17,7 @@ namespace IkSocks5.Accounts
         static AccountManager()
         {
             Parser = new FileIniDataParser();
-            IniData = Parser.ReadFile($"{AppDomain.CurrentDomain.BaseDirectory}{@"\Accounts\Acocunts.INI"}");
+            IniData = Parser.ReadFile($"{AppDomain.CurrentDomain.BaseDirectory}{@"\Accounts\Acocunts.ini"}");
         }
 
         public static bool Authenticate(AuthenticationRequest request)
