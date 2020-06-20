@@ -106,14 +106,6 @@ namespace IkSocks5.Core
                                     //Parse the datarequest from the client.
                                     using (var dReq = new DataRequest(buffer))
                                     {
-                                        //Create the remote socket according to the request AddressFamily
-                                        if (RemoteTCPClient == null)
-                                        {
-                                            RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
-                                            RemoteTCPClient.ReceiveBufferSize = 500000;
-                                            RemoteTCPClient.SendBufferSize = 500000;
-                                        }
-
                                         //Handle the command, so far we only support 0x01 CONNECT.
                                         switch (dReq.Command)
                                         {
@@ -125,6 +117,14 @@ namespace IkSocks5.Core
                                                 RequestResult result = RequestResult.Succeeded;
                                                 if (RemoteTCPClient.Connected)
                                                 {
+                                                    //Create the remote socket according to the request AddressFamily
+                                                    if (RemoteTCPClient == null)
+                                                    {
+                                                        RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
+                                                        RemoteTCPClient.ReceiveBufferSize = 500000;
+                                                        RemoteTCPClient.SendBufferSize = 500000;
+                                                    }
+
                                                     NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} GRANTED connection. Entering tunnel mode.");
                                                 }
                                                 else
