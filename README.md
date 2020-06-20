@@ -1,7 +1,9 @@
 # IkSocks5
-
 Clean and simple socks5 server.
+
 Target .NET Framework 4.7.2
+
+![](https://raw.githubusercontent.com/IkerRuizArnauda/IkSocks5/master/IkSocks5.PNG?token=AAOQJLBOK6ESRZ2ICJTXHLS666YBO)
 
 # Features
 Type | State
