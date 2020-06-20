@@ -54,8 +54,8 @@ namespace IkSocks5.Core
                 throw new Exception("Null TcpClient.");
          
             ClientTCPClient = client;
-            ClientTCPClient.ReceiveBufferSize = 500000;
-            ClientTCPClient.SendBufferSize = 500000;
+            ClientTCPClient.ReceiveBufferSize = 512000; //512Kb
+            ClientTCPClient.SendBufferSize = 512000; //512Kb
 
             ClientLocalEndPont = client.Client.RemoteEndPoint.ToString();
 
@@ -157,8 +157,8 @@ namespace IkSocks5.Core
                                                     if (RemoteTCPClient == null)
                                                     {
                                                         RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
-                                                        RemoteTCPClient.ReceiveBufferSize = 500000;
-                                                        RemoteTCPClient.SendBufferSize = 500000;
+                                                        RemoteTCPClient.ReceiveBufferSize = 512000; //512Kb
+                                                        RemoteTCPClient.SendBufferSize = 512000; //512Kb
                                                     }
 
                                                     NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} CONNECT request to {dReq?.DestinationAddress}:{dReq?.Port}");
@@ -214,44 +214,51 @@ namespace IkSocks5.Core
                     }
                 }
 
-                if (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
+                try
                 {
-                    using (NetworkStream remoteStream = RemoteTCPClient.GetStream())
+                    if (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
                     {
                         //The client already went through handshake and datarequest, at this point we are just passing data between client <-> remote 
-                        while (IsRunning && Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
+                        using (NetworkStream remoteStream = RemoteTCPClient.GetStream())
                         {
-                            if (Inactivity.Elapsed.TotalSeconds > 18)
-                                break;
-
-                            try
+                            while (IsRunning && Authenticated)
                             {
-                                byte[] buffer = new byte[ClientTCPClient.Available];
-                                if (buffer.Length > 0)
-                                {
-                                    Inactivity.Restart();
-                                    var read = clientStream.Read(buffer, 0, buffer.Length);
-                                    remoteStream.Write(buffer, 0, buffer.Length);
-                                }
+                                if (Inactivity.Elapsed.TotalSeconds > 18)
+                                    break;
 
-                                byte[] remoteBuff = new byte[RemoteTCPClient.Available];
-                                if (remoteBuff.Length > 0)
+                                try
                                 {
-                                    Inactivity.Restart();
-                                    remoteStream.Read(remoteBuff, 0, remoteBuff.Length);
-                                    clientStream.Write(remoteBuff, 0, remoteBuff.Length);
-                                }
+                                    byte[] buffer = new byte[ClientTCPClient.Available];
+                                    if (buffer.Length > 0)
+                                    {
+                                        Inactivity.Restart();
+                                        var read = clientStream.Read(buffer, 0, buffer.Length);
+                                        remoteStream.Write(buffer, 0, buffer.Length);
+                                    }
 
-                                Thread.Sleep(1);
-                            }
-                            catch (Exception ex)
-                            {
-                                //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
-                                NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
-                                break;
+                                    byte[] remoteBuff = new byte[RemoteTCPClient.Available];
+                                    if (remoteBuff.Length > 0)
+                                    {
+                                        Inactivity.Restart();
+                                        remoteStream.Read(remoteBuff, 0, remoteBuff.Length);
+                                        clientStream.Write(remoteBuff, 0, remoteBuff.Length);
+                                    }
+
+                                    Thread.Sleep(1);
+                                }
+                                catch (Exception ex)
+                                {
+                                    //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
+                                    NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
+                                    break;
+                                }
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
                 }
             }
         }
