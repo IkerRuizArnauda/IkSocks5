@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="INIFileParser, Version=2.5.2.0, Culture=neutral, PublicKeyToken=79af7b307b65cf3c, processorArchitecture=MSIL">
+      <HintPath>packages\ini-parser.2.5.2\lib\net20\INIFileParser.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -43,8 +46,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Accounts\AccountManager.cs" />
     <Compile Include="Core\ClientTunnel.cs" />
     <Compile Include="Core\Enums.cs" />
+    <Compile Include="Core\Packets\AuthenticationRequest.cs" />
+    <Compile Include="Core\Packets\AuthenticationResponse.cs" />
     <Compile Include="Core\Packets\DataRequest.cs" />
     <Compile Include="Core\Packets\DataResponse.cs" />
     <Compile Include="Core\Packets\MethodRequest.cs" />
@@ -53,6 +59,12 @@
     <Compile Include="Core\NonBlockingConsole.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Accounts\Acocunts.INI">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

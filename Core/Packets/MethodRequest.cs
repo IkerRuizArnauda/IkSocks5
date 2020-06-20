@@ -3,13 +3,11 @@ using System.IO;
 
 namespace IkSocks5.Core.Packets
 {
-    /// <summary>
     /// +----+----------+----------+
     /// |VER | NMETHODS | METHODS  |
     /// +----+----------+----------+
     /// | 1  | 1        | 1 to 255 |
     /// +----+----------+----------+
-    /// </summary>
     public class MethodRequest : BinaryReader
     {
         /// <summary>

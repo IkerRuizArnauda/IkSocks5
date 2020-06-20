@@ -7,21 +7,20 @@ using IkSocks5.Core.Packets;
 
 namespace IkSocks5.Core
 {
+    /// <summary>
+    /// ClientTCPClient <-> ClientTunnel <-> RemoteTCPClient
+    /// </summary>
     public class ClientTunnel : IDisposable
     {
-        ///
-        ///  ClientTCPClient <-> ThisServer <-> RemoteTCPClient
-        /// 
-
         /// <summary>
         /// This is out Socks5 client.
         /// </summary>
-        public TcpClient ClientTCPClient { get; set; }
+        public TcpClient ClientTCPClient { get; private set; }
 
         /// <summary>
         /// This is the client remote request handler.
         /// </summary>
-        public TcpClient RemoteTCPClient { get; set; }
+        public TcpClient RemoteTCPClient { get; private set; }
 
         /// <summary>
         /// Disconnect inactive sockets after 10 seconds.
@@ -33,6 +32,8 @@ namespace IkSocks5.Core
         /// </summary>
         public bool Authenticated = false;
 
+        public Method AuthMethod { get; private set; } = Method.Null;
+
         /// <summary>
         /// Exit flag.
         /// </summary>
@@ -41,7 +42,7 @@ namespace IkSocks5.Core
         /// <summary>
         /// Client local ep.
         /// </summary>
-        public string ClientLocalEndPont { get; set; }
+        public string ClientLocalEndPont { get; private set; }
 
         /// <summary>
         /// Initialize a ClientTunnel
@@ -66,125 +67,156 @@ namespace IkSocks5.Core
         /// </summary>
         public void Listen()
         {
-            NetworkStream clientStream = ClientTCPClient.GetStream();
-
-            //Authentication and Endpoint request process.
-            while (IsRunning)
+            using (NetworkStream clientStream = ClientTCPClient.GetStream())
             {
-                try
+                //Authentication and Endpoint request process.
+                while (IsRunning)
                 {
-                    //How much bytes is our client sending.
-                    byte[] buffer = new byte[ClientTCPClient.Available];
-                    if (buffer.Length > 0)
+                    try
                     {
-                        Inactivity.Restart();
-                        //Read those bytes.
-                        var read = clientStream.Read(buffer, 0, buffer.Length);
-                        //Parse the header.
-                        var message = ReadMessageType(this, buffer);
-
-                        //Process MessageType
-                        switch (message)
+                        //How much bytes is our client sending.
+                        byte[] buffer = new byte[ClientTCPClient.Available];
+                        if (buffer.Length > 0)
                         {
-                            //Client requested us with an auth method (Handshake), we support 0x01 (NoAuth) for now.
-                            case MessageType.MethodRequest:
-                                {
-                                    //Parse the client method request.
-                                    using (MethodRequest mReq = new MethodRequest(buffer))
+                            Inactivity.Restart();
+                            //Read those bytes.
+                            var read = clientStream.Read(buffer, 0, buffer.Length);
+                            //Parse the header.
+                            var message = ReadMessageType(this, buffer);
+
+                            //Process MessageType
+                            switch (message)
+                            {
+                                //Client requested us with an auth method (Handshake), we support 0x01 (NoAuth) for now.
+                                case MessageType.MethodRequest:
                                     {
-                                        if (mReq.Valid) //We successfully built the packet.
+                                        //Parse the client method request.
+                                        using (MethodRequest mReq = new MethodRequest(buffer))
                                         {
-                                            NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} AUTHENTICATION complete.");
-                                            Authenticated = true; //Flag as authenticated.
+                                            if (mReq.Valid) //We successfully built the packet.
+                                            {
+                                                AuthMethod = mReq.Method;
 
-                                            //Write response onto our client stream.
-                                            using (MethodResponse response = new MethodResponse(mReq))
-                                                clientStream.Write(response.Data, 0, response.Data.Length);
+                                                if (AuthMethod == Method.NoAuth)
+                                                {
+                                                    NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} AUTHENTICATION complete.");
+                                                    Authenticated = true; //Flag as authenticated.
+                                                }
+
+                                                //Write response onto our client stream.
+                                                using (MethodResponse response = new MethodResponse(mReq))
+                                                    clientStream.Write(response.Data, 0, response.Data.Length);
+                                            }
+                                            else
+                                                throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Invalid Method request.");
+
+                                            break;
                                         }
-                                        else
-                                            throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Invalid authentication request.");
+                                    }
+                                //Client sent auth request, in this case, UserPass which is the only "secure" method supported.
+                                case MessageType.AuthRequest:
+                                    {
+                                        //Parse the client auth request.
+                                        using (AuthenticationRequest authReq = new AuthenticationRequest(buffer))
+                                        {
+                                            if (authReq.Valid) //We successfully built the packet.
+                                            {
+                                                //Create our response which will also validate login information.
+                                                using (AuthenticationResponse authRes = new AuthenticationResponse(authReq))
+                                                {
+                                                    if (authRes.Valid)
+                                                    {
+                                                        NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} AUTHENTICATION complete.");
+                                                        Authenticated = true; //Flag as authenticated.
+                                                    }
 
+                                                    //Send handshake result.
+                                                    clientStream.Write(authRes.Data, 0, authRes.Data.Length);
+                                                }
+
+                                                if (!Authenticated) //Wrong authentication, throw and disconnect this client.
+                                                    throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Invalid authentication request.");
+                                            }
+                                            else //Wrong authentication, throw and disconnect this client.
+                                                throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Invalid authentication request.");
+
+                                            break;
+                                        }
+                                    }
+                                //After a successful handshake, the client tell us his request.
+                                case MessageType.DataRequest:
+                                    {
+                                        //Parse the datarequest from the client.
+                                        using (var dReq = new DataRequest(buffer))
+                                        {
+                                            //Handle the command, so far we only support 0x01 CONNECT.
+                                            switch (dReq.Command)
+                                            {
+                                                case Command.Connect:
+                                                    //Create the remote socket according to the request AddressFamily
+                                                    if (RemoteTCPClient == null)
+                                                    {
+                                                        RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
+                                                        RemoteTCPClient.ReceiveBufferSize = 500000;
+                                                        RemoteTCPClient.SendBufferSize = 500000;
+                                                    }
+
+                                                    NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} CONNECT request to {dReq?.DestinationAddress}:{dReq?.Port}");
+                                                    //Try to connect to the remote endpoint the client is requesting.
+                                                    RemoteTCPClient.Connect(dReq.DestinationAddress, dReq.Port);
+
+                                                    Result result = Result.Succeeded;
+                                                    if (RemoteTCPClient.Connected)
+                                                    {
+                                                        NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} GRANTED connection. Entering tunnel mode.");
+                                                    }
+                                                    else
+                                                    {
+                                                        result = Result.Network_Unreachable;
+                                                        NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} host REJECTED the connection.");
+                                                    }
+
+                                                    //Write the result to our client stream.
+                                                    using (DataResponse dResponse = new DataResponse(result, dReq.AddressType, dReq.DestinationBytes, dReq.PortBytes))
+                                                        clientStream.Write(dResponse.Data, 0, dResponse.Data.Length);
+
+                                                    if (result != Result.Succeeded)
+                                                        throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Remote host reject the connection.");
+
+                                                    break;
+                                                default:
+                                                    throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Unsuported message, disconnecting client.");
+                                            }
+                                        }
                                         break;
                                     }
-                                }
-                            //After a successful handshake, the client tell us his request.
-                            case MessageType.DataRequest:
-                                {
-                                    //Parse the datarequest from the client.
-                                    using (var dReq = new DataRequest(buffer))
-                                    {
-                                        //Handle the command, so far we only support 0x01 CONNECT.
-                                        switch (dReq.Command)
-                                        {
-                                            case Command.Connect:
-                                                //Create the remote socket according to the request AddressFamily
-                                                if (RemoteTCPClient == null)
-                                                {
-                                                    RemoteTCPClient = new TcpClient(dReq.DestinationAddress.AddressFamily);
-                                                    RemoteTCPClient.ReceiveBufferSize = 500000;
-                                                    RemoteTCPClient.SendBufferSize = 500000;
-                                                }
-
-                                                NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} CONNECT request to {dReq?.DestinationAddress}:{dReq?.Port}");
-                                                //Try to connect to the remote endpoint the client is requesting.
-                                                RemoteTCPClient.Connect(dReq.DestinationAddress, dReq.Port);
-
-                                                RequestResult result = RequestResult.Succeeded;
-                                                if (RemoteTCPClient.Connected)
-                                                {
-                                                    NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} GRANTED connection. Entering tunnel mode.");
-                                                }
-                                                else
-                                                {
-                                                    result = RequestResult.Network_Unreachable;
-                                                    NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} host REJECTED the connection.");
-                                                }
-
-                                                //Write the result to our client stream.
-                                                using (DataResponse dResponse = new DataResponse(result, dReq.AddressType, dReq.DestinationBytes, dReq.PortBytes))
-                                                    clientStream.Write(dResponse.Data, 0, dResponse.Data.Length);
-
-                                                if (result != RequestResult.Succeeded)
-                                                    throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Remote host reject the connection.");
-
-                                                break;
-                                            default:
-                                                throw new Exception($"Client {ClientTCPClient?.Client?.RemoteEndPoint} Unsuported message, disconnecting client.");
-                                        }
-                                    }
-                                    break;
-                                } 
-                            case MessageType.Null:
-                                throw new Exception("Invalid routing.");
+                                case MessageType.Null:
+                                    throw new Exception("Invalid routing.");
+                            }
                         }
+                        buffer = null;
+
+                        //At this point, if we have stablished a remote connection we go on and break in order to enter tunnel mode.
+                        if (RemoteTCPClient != null && RemoteTCPClient.Connected)
+                            break;
+
+                        //If this client has reported no activity in 10 seconds, kill it. We have no better way of knowing with TcpClients.
+                        if (Inactivity.Elapsed.TotalSeconds > 18)
+                            break;
+
+                        Thread.Sleep(1);
                     }
-                    buffer = null;
-
-                    //At this point, if we have stablished a remote connection we go on and break in order to enter tunnel mode.
-                    if (RemoteTCPClient != null && RemoteTCPClient.Connected)
+                    catch (Exception ex)
+                    {
+                        //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
+                        NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
                         break;
-
-                    //If this client has reported no activity in 10 seconds, kill it. We have no better way of knowing with TcpClients.
-                    if (Inactivity.Elapsed.TotalSeconds > 18)
-                        break;
-
-                    Thread.Sleep(1);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
-                    NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
-                    break;
-                }
-            }
 
-            if (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
-            {
-                NetworkStream remoteStream = RemoteTCPClient.GetStream();
-
-                using (clientStream)
+                if (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
                 {
-                    using (remoteStream)
+                    using (NetworkStream remoteStream = RemoteTCPClient.GetStream())
                     {
                         //The client already went through handshake and datarequest, at this point we are just passing data between client <-> remote 
                         while (IsRunning && Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
@@ -221,7 +253,7 @@ namespace IkSocks5.Core
                         }
                     }
                 }
-            }         
+            }
         }
 
         /// <summary>
@@ -230,8 +262,10 @@ namespace IkSocks5.Core
         /// <returns></returns>
         private MessageType ReadMessageType(ClientTunnel client, byte[] data)
         {
-            if (!client.Authenticated)
+            if (!client.Authenticated && client.AuthMethod == Method.Null)
                 return MessageType.MethodRequest;
+            else if (!client.Authenticated && client.AuthMethod == Method.UserPw)
+                return MessageType.AuthRequest;
             else if (data[0] == 0x05)
                 return MessageType.DataRequest;
             else

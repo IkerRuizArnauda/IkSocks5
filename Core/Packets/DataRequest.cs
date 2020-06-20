@@ -6,13 +6,11 @@ using System.Text;
 
 namespace IkSocks5.Core.Packets
 {
-    /// <summary>
     /// +----+-----+-------+------+----------+----------+
     /// |VER | CMD | RSV   | ATYP | DST.ADDR | DST.PORT |
     /// +----+-----+-------+------+----------+----------+
     /// | 1  |  1  | X’00’ |   1  | Variable |    2     |
     /// +----+-----+-------+------+----------+----------+
-    /// </summary>
     public class DataRequest : BinaryReader
     {
         public ushort Version { get; private set; }

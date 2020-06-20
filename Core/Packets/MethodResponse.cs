@@ -2,13 +2,11 @@
 
 namespace IkSocks5.Core.Packets
 {
-    /// <summary>
     /// +----+--------+
     /// |VER | METHOD |
     /// +----+--------+
     /// | 1  |    1   |
     /// +----+--------+
-    /// </summary>
     public class MethodResponse : BinaryWriter
     {
         public byte[] Data;

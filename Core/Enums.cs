@@ -5,17 +5,15 @@
         NoAuth        = 0x00,
         GSSAPI        = 0x01,
         UserPw        = 0x02,
+        Null          = 0x03,
     }
 
     public enum MessageType : byte
     {
         Null           = 0x00,
         MethodRequest  = 0x01,
-        MethodResponse = 0x02,
-        AuthRequest    = 0x03,
-        AuthResponse   = 0x04,
-        DataRequest    = 0x05,
-        DataResponse   = 0x06,
+        AuthRequest    = 0x02,
+        DataRequest    = 0x03,
     }
 
     public enum AddressType : byte
@@ -32,7 +30,7 @@
         Udp            = 0x03,
     }
 
-    public enum RequestResult : byte
+    public enum Result : byte
     {
         Succeeded                           = 0x00,
         General_SOCKS_Server_Failure        = 0x01,

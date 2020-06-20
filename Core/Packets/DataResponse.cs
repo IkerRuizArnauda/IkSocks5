@@ -2,17 +2,15 @@
 
 namespace IkSocks5.Core.Packets
 {
-    /// <summary>
     /// +----+-----+-------+------+----------+----------+
     /// |VER | REP | RSV   | ATYP | BND.ADDR | BND.PORT |
     /// +----+-----+-------+------+----------+----------+
     /// | 1  |  1  | X’00’ |  1   | Variable |    2     |
     /// +----+-----+-------+------+----------+----------+
-    /// </summary>
     public class DataResponse : BinaryWriter
     {
         public byte[] Data;
-        public DataResponse(RequestResult result, AddressType addressType, byte[] adressBytes, byte[] portBytes) : base(new MemoryStream())
+        public DataResponse(Result result, AddressType addressType, byte[] adressBytes, byte[] portBytes) : base(new MemoryStream())
         {
             using (MemoryStream ms = new MemoryStream())
             {

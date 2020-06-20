@@ -7,3 +7,12 @@ obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
 obj/Debug/IkSocks5.csproj.CoreCompileInputs.cache
 obj/Debug/IkSocks5.csproj.FileListAbsolute.txt
 obj/Debug/IkSocks5.csprojAssemblyReference.cache
+packages/ini-parser.2.5.2/.signature.p7s
+packages/ini-parser.2.5.2/ini-parser.2.5.2.nupkg
+packages/ini-parser.2.5.2/lib/net20/INIFileParser.dll
+packages/ini-parser.2.5.2/lib/net20/INIFileParser.dll.mdb
+packages/ini-parser.2.5.2/lib/net20/INIFileParser.xml
+obj/Debug/IkSocks5.csproj.CopyComplete
+bin/Debug/Accounts/Acocunts.INI
+bin/Debug/INIFileParser.dll
+bin/Debug/INIFileParser.xml
