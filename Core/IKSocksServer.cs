@@ -55,18 +55,18 @@ namespace IkSocks5.Core
                             {
                                 Clients.Add(client);
                                 NonBlockingConsole.WriteLine($"Client {clientTcpClient?.Client?.RemoteEndPoint} trying to connect, handling on thread {Thread.CurrentThread.ManagedThreadId}");
-                                client?.Listen();  //Blocking
+                                client?.Listen();  //Blocking async
                                 Clients.Remove(client);
                             }
                         }
                     });
+
+                    //Keep listening incoming connections.
+                    serverSocket.BeginAcceptTcpClient(AcceptCallback, Socks5Server);
                 }
 
                 if (disposedValue)
-                    return;
-
-                //Keep listening incoming connections.
-                Socks5Server.BeginAcceptTcpClient(AcceptCallback, Socks5Server);
+                    return;                
             }
             catch (Exception ex)
             {

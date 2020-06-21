@@ -22,3 +22,8 @@ bin/Release/Configuration.ini
 bin/Release/INIFileParser.dll
 bin/Release/INIFileParser.xml
 bin/Release/Release.zip
+obj/Release/.NETFramework,Version=v4.7.2.AssemblyAttributes.cs
+obj/Release/IkSocks5.csproj.CopyComplete
+obj/Release/IkSocks5.csproj.CoreCompileInputs.cache
+obj/Release/IkSocks5.csproj.FileListAbsolute.txt
+obj/Release/IkSocks5.csprojAssemblyReference.cache

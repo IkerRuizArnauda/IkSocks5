@@ -165,9 +165,10 @@ namespace IkSocks5.Core
                                                     //Try to connect to the remote endpoint the client is requesting.
                                                     RemoteTCPClient.Connect(dReq.DestinationAddress, dReq.Port);
 
-                                                    Result result = Result.Succeeded;
+                                                    Result result;
                                                     if (RemoteTCPClient.Connected)
                                                     {
+                                                        result = Result.Succeeded;
                                                         NonBlockingConsole.WriteLine($"Client {ClientTCPClient?.Client?.RemoteEndPoint} GRANTED connection. Entering tunnel mode.");
                                                     }
                                                     else
@@ -201,7 +202,7 @@ namespace IkSocks5.Core
                             break;
 
                         //If this client has reported no activity in 10 seconds, kill it. We have no better way of knowing with TcpClients.
-                        if (Inactivity.Elapsed.TotalSeconds > 18)
+                        if (Inactivity.Elapsed.TotalSeconds > 10)
                             break;
 
                         Thread.Sleep(1);
@@ -223,7 +224,7 @@ namespace IkSocks5.Core
                         {
                             while (IsRunning && Authenticated)
                             {
-                                if (Inactivity.Elapsed.TotalSeconds > 18)
+                                if (Inactivity.Elapsed.TotalSeconds > 10)
                                     break;
 
                                 try
