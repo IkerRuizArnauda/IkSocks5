@@ -217,7 +217,7 @@ namespace IkSocks5.Core
 
                 try
                 {
-                    if (Authenticated && RemoteTCPClient != null && RemoteTCPClient.Connected)
+                    if (Authenticated)
                     {
                         //The client already went through handshake and datarequest, at this point we are just passing data between client <-> remote 
                         using (NetworkStream remoteStream = RemoteTCPClient.GetStream())
@@ -292,6 +292,9 @@ namespace IkSocks5.Core
         {
             NonBlockingConsole.WriteLine($"Client {ClientLocalEndPont} Disconnected.");
 
+            Stop();
+            Inactivity?.Stop();
+            Inactivity = null;
             ClientTCPClient = null;
             RemoteTCPClient = null;
         }
