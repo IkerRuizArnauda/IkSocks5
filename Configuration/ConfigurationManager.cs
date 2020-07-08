@@ -5,7 +5,6 @@ using IkSocks5.Core;
 using IniParser;
 using IniParser.Model;
 
-
 namespace IkSocks5.Configuration
 {
     public static class ConfigurationManager
