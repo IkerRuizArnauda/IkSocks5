@@ -87,7 +87,7 @@ namespace IkSocks5.Core
                             //Process MessageType
                             switch (message)
                             {
-                                //Client requested us with an auth method (Handshake), we support 0x01 (NoAuth) for now.
+                                //Client requeste with NoAuth method.
                                 case MessageType.MethodRequest:
                                     {
                                         //Parse the client method request.
@@ -209,7 +209,7 @@ namespace IkSocks5.Core
                     }
                     catch (Exception ex)
                     {
-                        //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
+                        //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose on this object.
                         NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
                         break;
                     }
@@ -249,7 +249,7 @@ namespace IkSocks5.Core
                                 }
                                 catch (Exception ex)
                                 {
-                                    //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose)= on this object.
+                                    //Something went wrong, exit loop, this will unstuck the calling thread and will call Dispose on this object.
                                     NonBlockingConsole.WriteLine($"[ERROR] {ex.Message}");
                                     break;
                                 }
